@@ -1,6 +1,9 @@
 import actors.StationMonitorActor
 import akka.actor.{ActorSystem, Props}
+import akka.stream.ActorMaterializer
+import akka.stream.alpakka.amqp.{AmqpConnectionDetails, AmqpConnectionUri}
 import com.google.inject.{AbstractModule, Inject, Singleton}
+import play.api.Configuration
 import play.api.libs.concurrent.AkkaGuiceSupport
 
 /**
@@ -13,8 +16,8 @@ class StartupModule extends AbstractModule with AkkaGuiceSupport {
 }
 
 @Singleton
-class Startup @Inject()(system: ActorSystem){
-  println("THIS PRINTED AT STARTUP")
+class Startup @Inject()(system: ActorSystem, configuration:Configuration){
   val monitorActor = system.actorOf(Props[StationMonitorActor],"master-monitor")
+
   monitorActor ! "test message"
 }
