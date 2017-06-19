@@ -10,12 +10,15 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.util._
+import models.{LineMessage, LineMessageDeserializer}
 
 
 /**
   * Created by dennis on 6/18/17.
   */
-class StationMonitorActor extends Actor with ActorLogging {
+class StationMonitorActor extends Actor with ActorLogging with LineMessageDeserializer {
+
+
   override def preStart(): Unit = {
     implicit val askTimeout = Timeout(5L,TimeUnit.SECONDS)
     implicit val materializer = ActorMaterializer()
@@ -26,12 +29,11 @@ class StationMonitorActor extends Actor with ActorLogging {
     val queueDeclaration = BindingDeclaration(queueName, routingKey = Some("transit.line.#"),exchange = "transitExchange")
     val amqpSource = AmqpSource(NamedQueueSourceSettings(amqpConnection, queueName)
       .withDeclarations(queueDeclaration), bufferSize = 1)
-    amqpSource.mapAsync(parallelism = 1)(msg => context.self ? msg).runWith(Sink.ignore)
+    amqpSource.mapAsync(parallelism = 3)(msg => context.self ? convertFromByteString(msg.bytes)).runWith(Sink.ignore)
   }
 
   override def receive: Receive = {
-    case _ =>
-      log.error("received message")
+    case l:LineMessage => log.error(l.toString)
       sender() ! "reply"
   }
 }
